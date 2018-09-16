@@ -7,8 +7,10 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
+import org.opencv.core.Range;
 import org.opencv.core.Scalar;
-
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -80,23 +82,39 @@ public class ExampleBlueVision extends OpenCVPipeline {
         //Pythagorean distance
     }
 
+    public void displayArray(Scalar[][] arr){
+        for(Scalar[] s : arr)
+        {
+           // for(Scalar scale : )
+
+        }
+
+
+
+
+    }
 
     // This is called every camera frame.
     @Override
     public Mat processFrame(Mat rgba, Mat gray) {
 
-        Mat clone = rgba.clone();
+
 
         //let's divide it into blocks
-        int cols = rgba.cols();
-        int rows = rgba.rows();
-        for (int x = 0; x < rgba.cols() / 10 ; x++) {
-            for (int y = 0; y < rgba.rows() / 10 ; y++) {
-             Mat selection = rgba.submat(y * 10, (y+1) * 10, x*10, (x+1) * 10);
-             sections[y][x] = mean(selection);
+       int cols = rgba.cols();
+       int rows = rgba.rows();
+        Log.d("gggg", cols + " " + rows);
+         for (int y = 0; y < rgba.cols() /10; y++) {
+            for (int x = 0; x < rgba.rows()/10 ;x++) {
+
+                    Mat selection = new Mat();
+                    selection = rgba.adjustROI(y * 10, (y+1) * 10, x *10, (x+1) * 10);
+
+                    sections[y/10][x/10] = mean(selection);
             }
         }
-        int[] goldiest = {0,0};
+
+        /*int[] goldiest = {0,0};
         double closest = Double.MAX_VALUE;
         for(int y = 0; y < 10; y++){
             for(int x = 0; x < 10; x++){
@@ -109,7 +127,7 @@ public class ExampleBlueVision extends OpenCVPipeline {
 
 
             }
-        }
+        }*/
 
 
 
