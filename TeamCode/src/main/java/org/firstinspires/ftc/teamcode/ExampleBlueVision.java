@@ -169,8 +169,7 @@ public class ExampleBlueVision extends OpenCVPipeline {
 
         Log.d("glorp", contours.size() + "");
 
-
-
+        
    /*   if(contours.size() > 1 ){  Log.d("fleep", contours.get(0).toArray()[0] +"");}
        try{ if(contours.size() > 1 ){
             Point p1, p2;
