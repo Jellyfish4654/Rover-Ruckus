@@ -9,6 +9,7 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Range;
 import org.opencv.core.Scalar;
+
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -17,8 +18,10 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static org.opencv.core.Core.mean;
+import static org.opencv.core.Core.sumElems;
 
 /**
  * Created by guinea on 10/5/17.
@@ -54,7 +57,11 @@ import static org.opencv.core.Core.mean;
  */
 
 public class ExampleBlueVision extends OpenCVPipeline {
+
+    private static int frameCount = 0;
+
     private final Scalar GOLD = new Scalar(227, 123, 25);
+    Scalar[][] sections = new Scalar[32][24];
     private boolean showContours = true;
     // To keep it such that we don't have to instantiate a new Mat every call to processFrame,
     // we declare the Mats up here and reuse them. This is easier on the garbage collector.
@@ -62,11 +69,18 @@ public class ExampleBlueVision extends OpenCVPipeline {
     private Mat thresholded = new Mat();
     // this is just here so we can expose it later thru getContours.
     private List<MatOfPoint> contours = new ArrayList<>();
-    Scalar[][] sections = new Scalar[10][10];
+    private double closest = 99999;
 
     public synchronized void setShowCountours(boolean enabled) {
         showContours = enabled;
     }
+
+
+    public Scalar mul(Scalar it, double scale) {
+        return new Scalar(it.val[0] * it.val[0] * scale, it.val[1] * it.val[1] * scale,
+                it.val[2] * it.val[2] * scale, it.val[3] * it.val[3] * scale);
+    }
+
 
     public List<MatOfPoint> getContours() {
 
@@ -82,14 +96,11 @@ public class ExampleBlueVision extends OpenCVPipeline {
         //Pythagorean distance
     }
 
-    public void displayArray(Scalar[][] arr){
-        for(Scalar[] s : arr)
-        {
-           // for(Scalar scale : )
+    public void displayArray(Scalar[][] arr) {
+        for (Scalar[] s : arr) {
+            // for(Scalar scale : )
 
         }
-
-
 
 
     }
@@ -97,38 +108,42 @@ public class ExampleBlueVision extends OpenCVPipeline {
     // This is called every camera frame.
     @Override
     public Mat processFrame(Mat rgba, Mat gray) {
-
-
+        frameCount++;
 
         //let's divide it into blocks
-       int cols = rgba.cols();
-       int rows = rgba.rows();
-        Log.d("gggg", cols + " " + rows);
-         for (int y = 0; y < rgba.cols() /10; y++) {
-            for (int x = 0; x < rgba.rows()/10 ;x++) {
+        int cols = rgba.cols();
+        int rows = rgba.rows();
 
-                    Mat selection = new Mat();
-                    selection = rgba.adjustROI(y * 10, (y+1) * 10, x *10, (x+1) * 10);
+        for (int y = 0; y < rows / 20; y++) {
+            for (int x = 0; x < (cols / 20); x++) {
 
-                    sections[y/10][x/10] = mean(selection);
+
+                Mat selection = rgba.submat(y, y+1, x, x+1);
+
+
+                sections[y][x] = mean(selection);
             }
         }
 
-        /*int[] goldiest = {0,0};
-        double closest = Double.MAX_VALUE;
-        for(int y = 0; y < 10; y++){
-            for(int x = 0; x < 10; x++){
-                double distance = scalarDistance(new Scalar(sections[y][x].val), GOLD);
-                if(distance < closest){
-                    closest = distance;
-                    goldiest[0] = y;
-                    goldiest[1] = x;
+        int[] goldiest = {0, 0};
+
+        if (frameCount >= 100) {
+            for (int y = 0; y < sections.length; y++) {
+                for (int x = 0; x < sections[0].length; x++) {
+                    double distance = scalarDistance(new Scalar(sections[y][x].val), GOLD);
+                    if(goldiest[0]  != 0 || goldiest[1] != 0){Log.d("fsfs", goldiest[0] + " " + goldiest[1]);}
+                    if (distance < closest) {
+
+                        closest = distance;
+
+                        goldiest[0] = y;
+                        goldiest[1] = x;
+                    }
+
+
                 }
-
-
             }
-        }*/
-
+        }
 
 
         // First, we change the colorspace from RGBA to HSV, which is usually better for color
