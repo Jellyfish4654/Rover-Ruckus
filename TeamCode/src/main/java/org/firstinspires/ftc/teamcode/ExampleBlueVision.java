@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import android.util.Log;
 
 import org.corningrobotics.enderbots.endercv.OpenCVPipeline;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -22,6 +23,7 @@ import java.util.logging.Logger;
 
 import static org.opencv.core.Core.mean;
 import static org.opencv.core.Core.sumElems;
+
 
 /**
  * Created by guinea on 10/5/17.
@@ -58,6 +60,7 @@ import static org.opencv.core.Core.sumElems;
 
 public class ExampleBlueVision extends OpenCVPipeline {
 
+
     private static int frameCount = 0;
 
     private final Scalar GOLD = new Scalar(227, 123, 25);
@@ -70,6 +73,10 @@ public class ExampleBlueVision extends OpenCVPipeline {
     // this is just here so we can expose it later thru getContours.
     private List<MatOfPoint> contours = new ArrayList<>();
     private double closest = 99999;
+
+    final float THRESHOLD = 275;
+
+    public int[] goldiest = {0, 0};
 
     public synchronized void setShowCountours(boolean enabled) {
         showContours = enabled;
@@ -125,14 +132,14 @@ public class ExampleBlueVision extends OpenCVPipeline {
             }
         }
 
-        int[] goldiest = {0, 0};
+
 
         if (frameCount >= 100) {
             for (int y = 0; y < sections.length; y++) {
                 for (int x = 0; x < sections[0].length; x++) {
                     double distance = scalarDistance(new Scalar(sections[y][x].val), GOLD);
                     if(goldiest[0]  != 0 || goldiest[1] != 0){Log.d("fsfs", goldiest[0] + " " + goldiest[1]);}
-                    if (distance < closest) {
+                    if ((distance < closest) || distance < 270 || Math.abs(distance-closest) < THRESHOLD) {
 
                         closest = distance;
 
@@ -144,6 +151,8 @@ public class ExampleBlueVision extends OpenCVPipeline {
                 }
             }
         }
+
+        Imgproc.circle(rgba, new Point(goldiest[0] * 10,goldiest[1] * 10),10, new Scalar(0,0,0),10);
 
 
         // First, we change the colorspace from RGBA to HSV, which is usually better for color
@@ -169,7 +178,7 @@ public class ExampleBlueVision extends OpenCVPipeline {
 
         Log.d("glorp", contours.size() + "");
 
-        
+
    /*   if(contours.size() > 1 ){  Log.d("fleep", contours.get(0).toArray()[0] +"");}
        try{ if(contours.size() > 1 ){
             Point p1, p2;

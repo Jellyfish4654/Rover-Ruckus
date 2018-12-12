@@ -62,7 +62,7 @@ public class ExampleBlueVisionDemo extends OpMode {
     public void loop() {
         // update the settings of the vision pipeline
         blueVision.setShowCountours(gamepad1.x);
-
+        telemetry.addData("Goldiest", blueVision.goldiest[0] + " " + blueVision.goldiest[1]);
         // get a list of contours from the vision system
         List<MatOfPoint> contours = blueVision.getContours();
         for (int i = 0; i < contours.size(); i++) {
@@ -77,5 +77,10 @@ public class ExampleBlueVisionDemo extends OpMode {
     public void stop() {
         // stop the vision system
         blueVision.disable();
+    }
+
+
+    public void telemetrize(String label, String data){
+
     }
 }

@@ -3,19 +3,18 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-@TeleOp(name = "matias")
-public class MatiasOpMode extends OpMode {
-    DcMotor xAxis;
+@TeleOp(name = "zero")
+public class MotorZeroOpMode extends OpMode {
 
-
+    DcMotor motor;
     public void init(){
-        xAxis = hardwareMap.dcMotor.get("xAxis");
+        motor = hardwareMap.dcMotor.get("slurp");
+
     }
+
     public void loop(){
-        xAxis.setPower(gamepad1.left_stick_x);
 
-
-
+        motor.setPower(15);
     }
 
 }
