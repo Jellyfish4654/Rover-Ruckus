@@ -88,7 +88,9 @@ public class IterativeTeleOp extends IterativeBaseOpMode {
     @Override
     public void loop() {
        state = gamepad1.a ? DRIVE :( gamepad1.b ? TANK : state);
-       //if a is pressed go to drive, if b is pressed go to tank, otherwise stay in same state
+       //if a is pressed go to drive, if b is pressed go to tank, otherwise stay in same stat
+
+        double mult = gamepad1.left_bumper ? 0.5 : (gamepad1.right_bumper ? 0.2 : 1.0);
 
         double leftPower = 0;
         double rightPower = 0;
@@ -96,15 +98,15 @@ public class IterativeTeleOp extends IterativeBaseOpMode {
             case DRIVE:
                 double drive = -gamepad1.left_stick_y;
                 double turn = gamepad1.right_stick_x;
-                leftPower = Range.clip(drive + turn, -1.0, 1.0);
-                rightPower = Range.clip(drive - turn, -1.0, 1.0);
+                leftPower = Range.clip(mult*(drive + turn), -1.0, 1.0);
+                rightPower = Range.clip(mult * (drive - turn), -1.0, 1.0);
 
 
                 break;
             case TANK:
 
-                leftPower = -gamepad1.left_stick_y;
-                rightPower = -gamepad1.right_stick_y;
+                leftPower = mult * -gamepad1.left_stick_y;
+                rightPower = mult * -gamepad1.right_stick_y;
                 break;
 
 
