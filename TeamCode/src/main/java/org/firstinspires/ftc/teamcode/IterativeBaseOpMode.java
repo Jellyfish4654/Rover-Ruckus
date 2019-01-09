@@ -18,7 +18,6 @@ public class IterativeBaseOpMode extends OpMode {
 
     final float GEAR_RATIO = 7 / 792; //units are turns per inch , who knows it's correct
     DcMotor leftDrive, rightDrive;
-    State state = State.DRIVE;
     DcMotor latch;
 
 //    BNO055IMU imu;
@@ -29,25 +28,19 @@ public class IterativeBaseOpMode extends OpMode {
 
     @Override
     public void init() {
-
-
         leftDrive = hardwareMap.dcMotor.get("left");
         rightDrive = hardwareMap.dcMotor.get("right");
+//        latch = hardwareMap.dcMotor.get("latch");
 
-        latch = hardwareMap.dcMotor.get("latch");
-
-
-        leftDrive.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
-        latch.setDirection(DcMotorSimple.Direction.FORWARD);
+//        leftDrive.setDirection(DcMotorSimple.Direction.FORWARD);
+//        rightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
+//        latch.setDirection(DcMotorSimple.Direction.FORWARD);
 
 //        latch.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
         marker = hardwareMap.servo.get("marker");
 
 //        try {
-//
-//
 //            BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
 //
 //            parameters.mode = BNO055IMU.SensorMode.IMU;
@@ -63,7 +56,6 @@ public class IterativeBaseOpMode extends OpMode {
 //
 //        } catch (Exception e) {
 //            telemetry.addData("imu config failed, motors initialized properly", e.getMessage());
-//
 //        }
 
 
@@ -81,7 +73,7 @@ public class IterativeBaseOpMode extends OpMode {
     }
 
 
-    public float moveDistance(float d) {
+    protected float moveDistance(float d) {
         int old = leftDrive.getTargetPosition();
         if (d > 10) {
             leftDrive.setTargetPosition((leftDrive.getTargetPosition() + 3));
@@ -106,7 +98,7 @@ public class IterativeBaseOpMode extends OpMode {
 //
 //    }
 
-    public void dropMarker() {
+    protected void dropMarker() {
         marker.setPosition(.5); //idk we need to find the real answer, that's a builder thing
     }
 

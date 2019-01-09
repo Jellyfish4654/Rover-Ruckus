@@ -5,11 +5,11 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
-@TeleOp(name = "jelletele")
+@TeleOp(name = "JelleTele")
 public class DriveOpMode extends IterativeBaseOpMode {
 
     DcMotor left, right;
-//    DcMotor slurp;
+    //DcMotor slurp;
     DcMotor extend;
     DcMotor latch;
     State state = State.DRIVE;
@@ -21,11 +21,11 @@ public class DriveOpMode extends IterativeBaseOpMode {
         left = hardwareMap.dcMotor.get("left");
         right = hardwareMap.dcMotor.get("right");
 //        slurp = hardwareMap.dcMotor.get("slurp");
-        extend = hardwareMap.dcMotor.get("extend");
+//        extend = hardwareMap.dcMotor.get("extend");
 
-        latch = hardwareMap.dcMotor.get("latch");
+//        latch = hardwareMap.dcMotor.get("latch");
 
-        marker = hardwareMap.servo.get("marker");
+//        marker = hardwareMap.servo.get("marker");
 
         right.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -49,15 +49,18 @@ public class DriveOpMode extends IterativeBaseOpMode {
                 right.setPower(mult * (y + x));
                 break;
 
-
         }
 
-        state = gamepad1.dpad_up ? State.TANK : gamepad1.dpad_down ? State.DRIVE : state;
+        if (gamepad1.dpad_up) {
+            state = State.DRIVE;
+        } else if (gamepad1.dpad_down) {
+            state = State.TANK;
+        }
 
-        extend.setPower(gamepad2.left_stick_y);
-      //  slurp.setPower(gamepad2.right_stick_y);
+//        extend.setPower(gamepad2.left_stick_y);
+//        slurp.setPower(gamepad2.right_stick_y);
 
-        latch.setPower(mult * gamepad2.right_stick_x);
+//        latch.setPower(mult * gamepad2.right_stick_x);
     }
 }
 

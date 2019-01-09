@@ -12,6 +12,6 @@
 apply from: '../build.common.gradle'
 dependencies {
     implementation project(':FtcRobotController')
-    implementation project(':openCVLibrary3')
-    compile project(path: ':endercv')
+//    implementation project(':openCVLibrary3')
+//    compile project(path: ':endercv')
 }
