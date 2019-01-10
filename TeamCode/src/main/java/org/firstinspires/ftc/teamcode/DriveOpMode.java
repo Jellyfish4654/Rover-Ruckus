@@ -1,61 +1,80 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import org.firstinspires.ftc.robotcore.external.State;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
-@TeleOp(name = "JelleTele")
-public class DriveOpMode extends IterativeBaseOpMode {
+@TeleOp(name = "JelleTele - OnBotJava")
+public class DriveOpMode extends OpMode {
 
-    DcMotor left, right;
-    //DcMotor slurp;
-    DcMotor extend;
-    DcMotor latch;
+    DcMotor left, right, rack;
+    //    DcMotor slurp;
+//    DcMotor extend;
+//    DcMotor latch;
     State state = State.DRIVE;
 
-    Servo marker;
+//    Servo marker;
+
+    enum State {
+        DRIVE,
+        REVERSE,
+        TANK
+    }
 
     public void init() {
-
         left = hardwareMap.dcMotor.get("left");
         right = hardwareMap.dcMotor.get("right");
+        rack = hardwareMap.dcMotor.get("rack");
+
 //        slurp = hardwareMap.dcMotor.get("slurp");
 //        extend = hardwareMap.dcMotor.get("extend");
-
 //        latch = hardwareMap.dcMotor.get("latch");
-
 //        marker = hardwareMap.servo.get("marker");
 
         right.setDirection(DcMotorSimple.Direction.REVERSE);
-
+        rack.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public void loop() {
-        double mult = gamepad1.left_bumper ? 0.5 : (gamepad1.right_bumper ? 0.2 : 1.0);
+        // DRIVE CONTROLS
+
+        double driveMult = gamepad1.left_bumper ? 0.5 : (gamepad1.right_bumper ? 0.2 : 1.0);
 
         double x = gamepad1.left_stick_x;
         double y = gamepad1.left_stick_y;
 
         switch (state) {
-
-            case TANK:
-                left.setPower(mult * gamepad1.left_stick_y);
-                right.setPower(mult * gamepad1.right_stick_y);
-                break;
-
             case DRIVE:
-                left.setPower(mult * (y - x));
-                right.setPower(mult * (y + x));
+                left.setPower(driveMult * (y - x));
+                right.setPower(driveMult * (y + x));
                 break;
-
+            case REVERSE:
+                left.setPower(driveMult * -(y + x));
+                right.setPower(driveMult * -(y - x));
+                break;
+            case TANK:
+                left.setPower(driveMult * gamepad1.left_stick_y);
+                right.setPower(driveMult * gamepad1.right_stick_y);
+                break;
         }
 
         if (gamepad1.dpad_up) {
             state = State.DRIVE;
         } else if (gamepad1.dpad_down) {
+            state = State.REVERSE;
+        } else if (gamepad1.dpad_left) {
             state = State.TANK;
         }
+
+
+        // AUX CONTROLS
+
+        double auxMult = gamepad2.left_bumper ? 0.5 : (gamepad2.right_bumper ? 0.2 : 1.0);
+
+        rack.setPower(auxMult * ((gamepad2.dpad_up ? 1 : 0) + (gamepad2.dpad_down ? -1 : 0)));
 
 //        extend.setPower(gamepad2.left_stick_y);
 //        slurp.setPower(gamepad2.right_stick_y);
@@ -63,5 +82,3 @@ public class DriveOpMode extends IterativeBaseOpMode {
 //        latch.setPower(mult * gamepad2.right_stick_x);
     }
 }
-
-

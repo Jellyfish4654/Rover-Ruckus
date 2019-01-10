@@ -9,7 +9,9 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 enum State {
-    DRIVE, TANK
+    DRIVE,
+    REVERSE,
+    TANK
 }
 
 
