@@ -253,6 +253,40 @@ public class MaThreeAutoOp extends LinearOpMode {
         }
         setPower(0, 0);
     }
+    private void vturn(double degrees, double ratio) {
+        double initialAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+        double currentAngle = initialAngle;
+        double targetAngle = initialAngle - degrees;
+        if (targetAngle > 180)
+            targetAngle -= 360;
+        else if (targetAngle < -180)
+            targetAngle += 360;
+
+        double delta = getDelta(targetAngle, currentAngle);
+        double lastDelta = delta;
+        double dir = Math.abs(delta) / delta;
+
+        turnTelemetry(initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
+
+        while (!isStopRequested() && !(delta * dir <= 0 && lastDelta * dir >= 0)) {
+            currentAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+            lastDelta = delta;
+            delta = getDelta(targetAngle, currentAngle);
+            double speed = turnSpeed * (minSlow + (Math.max(endSlow, Math.min(startSlow, Math.abs(delta))) - endSlow) / (startSlow - endSlow) * (1 - minSlow));
+            if (ratio > 0){
+                setPower(-dir * speed, dir * speed * ratio);
+            }
+            else if (ratio < 0) {
+                setPower(-dir * speed * Math.abs(ratio), dir * speed);
+            }
+
+            //telemetry.log().add("< Last Delta   - ", lastDelta);
+            //telemetry.log().add("  Curr Delta > - ", delta);
+
+            turnTelemetry(initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
+        }
+        setPower(0, 0);
+    }
 
     private double getDelta(double target, double current) {
         double delta = target - current;
