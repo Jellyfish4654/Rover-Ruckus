@@ -6,9 +6,8 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -16,13 +15,19 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
-@Autonomous(name = "Ma3 Auto Op - OnBotJava")
+import com.disnodeteam.dogecv.CameraViewDisplay;
+import com.disnodeteam.dogecv.DogeCV;
+import com.disnodeteam.dogecv.detectors.roverrukus.GoldAlignDetector;
+
+@Autonomous(name = "Ma3 Auto Op")
 public class MaThreeAutoOp extends LinearOpMode {
 
     DcMotor leftDrive, rightDrive;
-    DcMotor latch;
+    DcMotor rack;
 
     BNO055IMU imu;
+
+    double baseAngle, trueAngle;
 
     public void runOpMode() {
 
@@ -30,13 +35,10 @@ public class MaThreeAutoOp extends LinearOpMode {
 
         leftDrive = hardwareMap.dcMotor.get("left");
         rightDrive = hardwareMap.dcMotor.get("right");
-//        latch = hardwareMap.dcMotor.get("latch");
+        rack = hardwareMap.dcMotor.get("rack");
 
         leftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
-
-
-        leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rack.setDirection(DcMotorSimple.Direction.REVERSE);
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -49,48 +51,67 @@ public class MaThreeAutoOp extends LinearOpMode {
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         imu.initialize(parameters);
 
-        double degrees = 90;
-        double inches = 12;
+        int gold = 0;
 
         // Set up variables during init
         while(!isStarted() && !isStopRequested()) {
-            degrees += 0.5 * ((gamepad2.dpad_right ? 1 : 0) + (gamepad2.dpad_left ? -1 : 0));
-            inches += 0.1 * ((gamepad2.dpad_up ? 1 : 0) + (gamepad2.dpad_down ? -1 : 0));
-            initTelemetry(degrees, inches);
+            gold = gamepad1.dpad_left ? -1 : (gamepad1.dpad_up ? 0 : (gamepad1.dpad_right ? 1 : gold));
+            telemetry.addData("Gold Position: ", gold);
+            telemetry.update();
         }
 
 
         // START
 
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
+        baseAngle = trueAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
 
-        drive(30);
+        land();
+
+//        int gold = sample();
+
+
+        drive(16.5);
         sleep(100);
 
-        drive(-13.5);
-        sleep(100);
+        if (gold == 0) {
+            drive(13.5);
+            sleep(100);
+            drive(-13.5);
+            sleep(100);
+        } else {
+            turn(45 * gold == 1 ? 1 : -1);
+            sleep(2000);
+            drive(20);
+            sleep(2000);
+            drive(-20);
+            sleep(2000);
+            turn(-45 * gold == 1 ? 1 : -1);
+            sleep(2000);
+        }
+
+//        drive(30);
+//        sleep(100);
+//
+//        drive(-13.5);
+//        sleep(100);
 
         turn(-77);
         sleep(100);
 
-        drive(41);
+        drive(40);
         sleep(100);
 
         turn(122);
         sleep(100);
 
         drive(39);
-        sleep(100);
+        sleep(1000);
+
+        // TODO: Drop marker
 
         drive(-66);
         sleep(100);
-    }
-
-    private void initTelemetry(double degrees, double inches) {
-        telemetry.addData("Degrees: ", degrees);
-        telemetry.addData("Inches: ", inches);
-
-        telemetry.update();
     }
 
     private void setPower(double left, double right) {
@@ -98,7 +119,67 @@ public class MaThreeAutoOp extends LinearOpMode {
         rightDrive.setPower(right);
     }
 
+    private void land() {
+        rack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rack.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rack.setTargetPosition(20000); // TODO: Get correct value
+
+        rack.setPower(1);
+        ElapsedTime timer = new ElapsedTime();
+        while (!isStopRequested() && rack.isBusy() && timer.seconds() < 10) {
+            telemetry.addData("Rack Position: ", rack.getCurrentPosition());
+            telemetry.addData("Rack Target: ", rack.getTargetPosition());
+            telemetry.update();
+        }
+        rack.setPower(0);
+        rack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        turn(-10, 0.6);
+        timer.reset();
+        rack.setPower(-1);
+        while (timer.seconds() < 2);
+        rack.setPower(0);
+        turn(10);
+    }
+
+    private int sample() {
+        GoldAlignDetector detector;
+
+        // Set up detector
+        detector = new GoldAlignDetector(); // Create detector
+        detector.init(hardwareMap.appContext, CameraViewDisplay.getInstance()); // Initialize it with the app context and camera
+        detector.useDefaults(); // Set detector to use default settings
+
+        // Optional tuning
+        detector.alignSize = 100; // How wide (in pixels) is the range in which the gold object will be aligned. (Represented by green bars in the preview)
+        detector.alignPosOffset = 0; // How far from center frame to offset this alignment zone.
+        detector.downscale = 0.4; // How much to downscale the input frames
+
+        detector.areaScoringMethod = DogeCV.AreaScoringMethod.MAX_AREA; // Can also be PERFECT_AREA
+        //detector.perfectAreaScorer.perfectArea = 10000; // if using PERFECT_AREA scoring
+        detector.maxAreaScorer.weight = 0.005; //
+
+        detector.ratioScorer.weight = 5; //
+        detector.ratioScorer.perfectRatio = 1.0; // Ratio adjustment
+
+        detector.enable(); // Start the detector!
+
+        ElapsedTime timer = new ElapsedTime();
+        while(!isStopRequested() && !detector.isFound() && timer.seconds() < 3);
+
+        double x = detector.getXPosition();
+        telemetry.addData("X Position: ", x);
+        telemetry.update();
+
+        detector.disable();
+        return x > 400 ? 1 : (x < 400 ? -1 : 0);
+    }
+
     private void drive(double inches) {
+        drive(inches, 0.15);
+    }
+
+    private void drive(double inches, double power) {
         // 2240 ticks per motor rotation, 40 tooth motor sprocket, 20 tooth wheel sprockets, 90mm wheels
 
         leftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -109,8 +190,8 @@ public class MaThreeAutoOp extends LinearOpMode {
         leftDrive.setTargetPosition(leftDrive.getCurrentPosition() + targetPos);
         rightDrive.setTargetPosition(rightDrive.getCurrentPosition() + targetPos);
 
-        leftDrive.setPower(0.125);
-        rightDrive.setPower(0.125);
+        leftDrive.setPower(power);
+        rightDrive.setPower(power);
 
         while(!isStopRequested() && (leftDrive.isBusy() || rightDrive.isBusy())) {
             driveTelemetry();
@@ -136,11 +217,17 @@ public class MaThreeAutoOp extends LinearOpMode {
     }
 
 
-    final double turnSpeed = 0.1, startSlow = 50, endSlow = 5, minSlow = 0.15;
     private void turn(double degrees) {
+        turn(degrees, 0.1);
+    }
+
+    final double startSlow = 50, endSlow = 5, minSlow = 0.2;
+    private void turn(double degrees, double power) {
+        trueAngle -= degrees;
+
         double initialAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
         double currentAngle = initialAngle;
-        double targetAngle = initialAngle - degrees;
+        double targetAngle = trueAngle;
         if (targetAngle > 180)
             targetAngle -= 360;
         else if (targetAngle < -180)
@@ -156,7 +243,7 @@ public class MaThreeAutoOp extends LinearOpMode {
             currentAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
             lastDelta = delta;
             delta = getDelta(targetAngle, currentAngle);
-            double speed = turnSpeed * (minSlow + (Math.max(endSlow, Math.min(startSlow, Math.abs(delta))) - endSlow) / (startSlow - endSlow) * (1 - minSlow));
+            double speed = Math.min(1, power * (minSlow + (Math.max(endSlow, Math.min(startSlow, Math.abs(delta))) - endSlow) / (startSlow - endSlow) * (1 - minSlow)));
             setPower(-dir * speed, dir * speed);
 
             //telemetry.log().add("< Last Delta   - ", lastDelta);
