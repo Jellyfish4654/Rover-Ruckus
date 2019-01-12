@@ -52,11 +52,22 @@ public class MaThreeAutoOp extends LinearOpMode {
         imu.initialize(parameters);
 
         int gold = 0;
+        int drop = 12775, clear = 8850;
+        boolean land = true;
+        boolean depotSide = true;
 
         // Set up variables during init
         while(!isStarted() && !isStopRequested()) {
             gold = gamepad1.dpad_left ? -1 : (gamepad1.dpad_up ? 0 : (gamepad1.dpad_right ? 1 : gold));
+            drop += gamepad2.dpad_up ? 10 : (gamepad2.dpad_down ? -10 : 0);
+            clear += gamepad2.dpad_up ? 10 : (gamepad2.dpad_down ? -10 : 0);
+            depotSide = gamepad1.a ? false : (gamepad1.b ? true : depotSide);
+            land = gamepad2.a ? false : (gamepad2.b ? true : land);
+
             telemetry.addData("Gold Position: ", gold);
+            telemetry.addData("Drop: ", drop);
+            telemetry.addData("Clear: ", clear);
+            telemetry.addData("depotSide: ", depotSide);
             telemetry.update();
         }
 
@@ -66,29 +77,54 @@ public class MaThreeAutoOp extends LinearOpMode {
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
         baseAngle = trueAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
 
-        land();
+        if (land) {
+            land(drop, clear);
+        }
 
-//        int gold = sample();
+        gold = sample(0.075);
 
 
         drive(16.5);
         sleep(100);
 
-        if (gold == 0) {
-            drive(13.5);
-            sleep(100);
-            drive(-13.5);
-            sleep(100);
-        } else {
-            turn(45 * gold == 1 ? 1 : -1);
-            sleep(2000);
-            drive(20);
-            sleep(2000);
-            drive(-20);
-            sleep(2000);
-            turn(-45 * gold == 1 ? 1 : -1);
-            sleep(2000);
+        final double endAngle = depotSide ? -55 : -90, sideAngle = 40;
+        switch (gold) {
+            case 0:
+                turn(0, 0.2, false);
+                drive(13.5);
+                sleep(100);
+                drive(-18.5);
+                sleep(100);
+                break;
+            case -1:
+            case 1:
+                double dir = gold == -1 ? -1 : 1;
+                turn(sideAngle * dir, 0.1, false);
+                sleep(100);
+                drive(18);
+                sleep(100);
+                drive(-18);
+                sleep(100);
+                turn(-sideAngle * dir);
+                sleep(100);
+                drive(-5);
+                sleep(100);
+                break;
         }
+
+        turn(endAngle);
+        sleep(100);
+
+//        if (gold == 0) {
+//
+//        } else {
+//            telemetry.addData("True Angle: ", trueAngle);
+//            telemetry.addData("Angle: ", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+//
+//            telemetry.update();
+//
+//
+//        }
 
 //        drive(30);
 //        sleep(100);
@@ -96,21 +132,27 @@ public class MaThreeAutoOp extends LinearOpMode {
 //        drive(-13.5);
 //        sleep(100);
 
-        turn(-77);
+
+        drive(-5);
         sleep(100);
 
-        drive(40);
+        drive(40, 0.4);
         sleep(100);
 
-        turn(122);
-        sleep(100);
+        if (depotSide) {
+            turn(45 - endAngle - 10);
+            sleep(100);
+        } else {
+            turn(-135 - endAngle);
+            sleep(100);
+        }
 
-        drive(39);
+        drive(depotSide ? 40 : 50, 0.4);
         sleep(1000);
 
         // TODO: Drop marker
 
-        drive(-66);
+        drive(-65, 0.5);
         sleep(100);
     }
 
@@ -119,10 +161,10 @@ public class MaThreeAutoOp extends LinearOpMode {
         rightDrive.setPower(right);
     }
 
-    private void land() {
+    private void land(int drop, int clear) {
         rack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rack.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        rack.setTargetPosition(20000); // TODO: Get correct value
+        rack.setTargetPosition(drop);
 
         rack.setPower(1);
         ElapsedTime timer = new ElapsedTime();
@@ -134,16 +176,34 @@ public class MaThreeAutoOp extends LinearOpMode {
         rack.setPower(0);
         rack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        turn(-10, 0.6);
+        turn(-10, 0.3, true);
         timer.reset();
         rack.setPower(-1);
-        while (timer.seconds() < 2);
+        while (rack.getCurrentPosition() > clear && timer.seconds() < 3);
         rack.setPower(0);
-        turn(10);
+        turn(10, 0.3, true);
+
+        drive(-3);
+        trueAngle = 0;
+
+//        sleep(3);
+//        rack.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//        rack.setTargetPosition(0);
+//        rack.setPower(1);
+//        while (!isStopRequested() && rack.isBusy()) {
+//            telemetry.addData("Rack Position: ", rack.getCurrentPosition());
+//            telemetry.addData("Rack Target: ", rack.getTargetPosition());
+//            telemetry.update();
+//        }
     }
 
-    private int sample() {
+    private int sample(double power) {
+        turn(35);
+
         GoldAlignDetector detector;
+
+        leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Set up detector
         detector = new GoldAlignDetector(); // Create detector
@@ -164,19 +224,56 @@ public class MaThreeAutoOp extends LinearOpMode {
 
         detector.enable(); // Start the detector!
 
-        ElapsedTime timer = new ElapsedTime();
-        while(!isStopRequested() && !detector.isFound() && timer.seconds() < 3);
+        telemetry.addData("X Position: ", detector.getXPosition());
+        telemetry.addData("True Angle: ", trueAngle);
+        telemetry.addData("Angle: ", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
 
-        double x = detector.getXPosition();
-        telemetry.addData("X Position: ", x);
         telemetry.update();
+        sleep(100);
+
+
+        setPower(power, -power);
+        double angle;
+        double delta = 0;
+//        while(!isStopRequested()) {
+//            setPower(power * gamepad1.left_stick_x, -power * gamepad1.left_stick_x);
+//
+//            angle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+//            delta = Math.abs(angle - trueAngle);
+//            telemetry.addData("Delta: ", delta);
+//            telemetry.addData("X Position: ", detector.getXPosition());
+//            telemetry.addData("True Angle: ", trueAngle);
+//            telemetry.addData("Angle: ", angle);
+//
+//            telemetry.update();
+//        }
+
+        while(!isStopRequested() && !detector.isFound() && delta < 50) {
+            angle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+            delta = Math.abs(angle - trueAngle);
+            telemetry.addData("Delta: ", delta);
+            telemetry.update();
+        }
+        setPower(0, 0);
 
         detector.disable();
-        return x > 400 ? 1 : (x < 400 ? -1 : 0);
+
+        int gold = delta < 15 ? -1 : (delta > 30 ? 1 : 0);
+
+        double x = detector.getXPosition();
+        telemetry.addData("Delta: ", delta);
+        telemetry.addData("X Position: ", x);
+        telemetry.addData("Gold Position: ", gold);
+        telemetry.update();
+
+        sleep(100);
+
+        turn(-35);
+        return gold;
     }
 
     private void drive(double inches) {
-        drive(inches, 0.15);
+        drive(inches, 0.25);
     }
 
     private void drive(double inches, double power) {
@@ -190,8 +287,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         leftDrive.setTargetPosition(leftDrive.getCurrentPosition() + targetPos);
         rightDrive.setTargetPosition(rightDrive.getCurrentPosition() + targetPos);
 
-        leftDrive.setPower(power);
-        rightDrive.setPower(power);
+        setPower(power, power);
 
         while(!isStopRequested() && (leftDrive.isBusy() || rightDrive.isBusy())) {
             driveTelemetry();
@@ -199,9 +295,6 @@ public class MaThreeAutoOp extends LinearOpMode {
 
         leftDrive.setPower(0);
         rightDrive.setPower(0);
-
-        leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     private void driveTelemetry() {
@@ -217,13 +310,21 @@ public class MaThreeAutoOp extends LinearOpMode {
     }
 
 
+    private void absoluteTurn(double degrees) {
+        trueAngle = degrees;
+        turn(0);
+    }
+
     private void turn(double degrees) {
-        turn(degrees, 0.1);
+        turn(degrees, 0.2, false);
     }
 
     final double startSlow = 50, endSlow = 5, minSlow = 0.2;
-    private void turn(double degrees, double power) {
+    private void turn(double degrees, double power, boolean ignoreCurve) {
         trueAngle -= degrees;
+
+        leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         double initialAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
         double currentAngle = initialAngle;
@@ -237,56 +338,56 @@ public class MaThreeAutoOp extends LinearOpMode {
         double lastDelta = delta;
         double dir = Math.abs(delta) / delta;
 
-        turnTelemetry(initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
-
         while (!isStopRequested() && !(delta * dir <= 0 && lastDelta * dir >= 0)) {
             currentAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
             lastDelta = delta;
             delta = getDelta(targetAngle, currentAngle);
-            double speed = Math.min(1, power * (minSlow + (Math.max(endSlow, Math.min(startSlow, Math.abs(delta))) - endSlow) / (startSlow - endSlow) * (1 - minSlow)));
+            double speed;
+            if (!ignoreCurve) {
+                speed = Math.min(1, power * (minSlow + (Math.max(endSlow, Math.min(startSlow, Math.abs(delta))) - endSlow) / (startSlow - endSlow) * (1 - minSlow)));
+            } else {
+                speed = power;
+            }
             setPower(-dir * speed, dir * speed);
 
-            //telemetry.log().add("< Last Delta   - ", lastDelta);
-            //telemetry.log().add("  Curr Delta > - ", delta);
-
-            turnTelemetry(initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
+            turnTelemetry(speed, initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
         }
         setPower(0, 0);
     }
-    private void vturn(double degrees, double ratio) {
-        double initialAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
-        double currentAngle = initialAngle;
-        double targetAngle = initialAngle - degrees;
-        if (targetAngle > 180)
-            targetAngle -= 360;
-        else if (targetAngle < -180)
-            targetAngle += 360;
-
-        double delta = getDelta(targetAngle, currentAngle);
-        double lastDelta = delta;
-        double dir = Math.abs(delta) / delta;
-
-        turnTelemetry(initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
-
-        while (!isStopRequested() && !(delta * dir <= 0 && lastDelta * dir >= 0)) {
-            currentAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
-            lastDelta = delta;
-            delta = getDelta(targetAngle, currentAngle);
-            double speed = turnSpeed * (minSlow + (Math.max(endSlow, Math.min(startSlow, Math.abs(delta))) - endSlow) / (startSlow - endSlow) * (1 - minSlow));
-            if (ratio > 0){
-                setPower(-dir * speed, dir * speed * ratio);
-            }
-            else if (ratio < 0) {
-                setPower(-dir * speed * Math.abs(ratio), dir * speed);
-            }
-
-            //telemetry.log().add("< Last Delta   - ", lastDelta);
-            //telemetry.log().add("  Curr Delta > - ", delta);
-
-            turnTelemetry(initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
-        }
-        setPower(0, 0);
-    }
+//    private void vturn(double degrees, double ratio) {
+//        double initialAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+//        double currentAngle = initialAngle;
+//        double targetAngle = initialAngle - degrees;
+//        if (targetAngle > 180)
+//            targetAngle -= 360;
+//        else if (targetAngle < -180)
+//            targetAngle += 360;
+//
+//        double delta = getDelta(targetAngle, currentAngle);
+//        double lastDelta = delta;
+//        double dir = Math.abs(delta) / delta;
+//
+//        turnTelemetry(initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
+//
+//        while (!isStopRequested() && !(delta * dir <= 0 && lastDelta * dir >= 0)) {
+//            currentAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+//            lastDelta = delta;
+//            delta = getDelta(targetAngle, currentAngle);
+//            double speed = 0; // turnSpeed * (minSlow + (Math.max(endSlow, Math.min(startSlow, Math.abs(delta))) - endSlow) / (startSlow - endSlow) * (1 - minSlow));
+//            if (ratio > 0){
+//                setPower(-dir * speed, dir * speed * ratio);
+//            }
+//            else if (ratio < 0) {
+//                setPower(-dir * speed * Math.abs(ratio), dir * speed);
+//            }
+//
+//            //telemetry.log().add("< Last Delta   - ", lastDelta);
+//            //telemetry.log().add("  Curr Delta > - ", delta);
+//
+//            turnTelemetry(initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
+//        }
+//        setPower(0, 0);
+//    }
 
     private double getDelta(double target, double current) {
         double delta = target - current;
@@ -297,9 +398,10 @@ public class MaThreeAutoOp extends LinearOpMode {
         return delta;
     }
 
-    private void turnTelemetry(double initialAngle, double currentAngle, double targetAngle, double delta, double lastDelta, double dir) {
+    private void turnTelemetry(double speed, double initialAngle, double currentAngle, double targetAngle, double delta, double lastDelta, double dir) {
         Orientation orient = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES);
 
+        telemetry.addData("Speed: ", speed);
         telemetry.addData("First Angle: ", orient.firstAngle);
         telemetry.addData("Second Angle: ", orient.secondAngle);
         telemetry.addData("Third Angle: ", orient.thirdAngle);
