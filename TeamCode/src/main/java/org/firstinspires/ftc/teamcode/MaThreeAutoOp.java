@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -24,6 +25,7 @@ public class MaThreeAutoOp extends LinearOpMode {
 
     DcMotor leftDrive, rightDrive;
     DcMotor rack;
+    Servo marker;
 
     BNO055IMU imu;
 
@@ -36,9 +38,12 @@ public class MaThreeAutoOp extends LinearOpMode {
         leftDrive = hardwareMap.dcMotor.get("left");
         rightDrive = hardwareMap.dcMotor.get("right");
         rack = hardwareMap.dcMotor.get("rack");
+        marker = hardwareMap.servo.get("marker");
 
         leftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
         rack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        marker.setPosition(1);
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -51,23 +56,33 @@ public class MaThreeAutoOp extends LinearOpMode {
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         imu.initialize(parameters);
 
+        long interWait = 100;
         int gold = 0;
-        int drop = 12775, clear = 8850;
+        int drop = 12750, clear = 8850;
+        boolean dropPress = false, clearPress = false;
         boolean land = true;
         boolean depotSide = true;
+
 
         // Set up variables during init
         while(!isStarted() && !isStopRequested()) {
             gold = gamepad1.dpad_left ? -1 : (gamepad1.dpad_up ? 0 : (gamepad1.dpad_right ? 1 : gold));
-            drop += gamepad2.dpad_up ? 10 : (gamepad2.dpad_down ? -10 : 0);
-            clear += gamepad2.dpad_up ? 10 : (gamepad2.dpad_down ? -10 : 0);
+            if (!dropPress)
+                drop += gamepad2.dpad_up ? 10 : (gamepad2.dpad_down ? -10 : 0);
+            if (!clearPress)
+                clear += gamepad2.dpad_up ? 10 : (gamepad2.dpad_down ? -10 : 0);
             depotSide = gamepad1.a ? false : (gamepad1.b ? true : depotSide);
             land = gamepad2.a ? false : (gamepad2.b ? true : land);
+
+            dropPress = gamepad2.dpad_up;
+            clearPress = gamepad2.dpad_down;
 
             telemetry.addData("Gold Position: ", gold);
             telemetry.addData("Drop: ", drop);
             telemetry.addData("Clear: ", clear);
             telemetry.addData("depotSide: ", depotSide);
+            telemetry.addData("Land: ", land);
+            telemetry.addData("Angle: ", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
             telemetry.update();
         }
 
@@ -75,7 +90,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         // START
 
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
-        baseAngle = trueAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+        baseAngle = trueAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle + 3;
 
         if (land) {
             land(drop, clear);
@@ -84,7 +99,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         gold = sample(0.075);
 
 
-        drive(16.5);
+        drive(13.5);
         sleep(100);
 
         final double endAngle = depotSide ? -55 : -90, sideAngle = 40;
@@ -148,12 +163,18 @@ public class MaThreeAutoOp extends LinearOpMode {
         }
 
         drive(depotSide ? 40 : 50, 0.4);
-        sleep(1000);
-
-        // TODO: Drop marker
-
-        drive(-65, 0.5);
         sleep(100);
+
+        turn(-25);
+
+        dropMarker(0.6, 750);
+        turn(33);
+
+
+        drive(-70, 0.5);
+        sleep(100);
+
+        marker.setPosition(1);
     }
 
     private void setPower(double left, double right) {
@@ -176,15 +197,17 @@ public class MaThreeAutoOp extends LinearOpMode {
         rack.setPower(0);
         rack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        turn(-10, 0.3, true);
+        absoluteTurn(baseAngle + 10);
+//        turn(-10, 0.25, true);
         timer.reset();
         rack.setPower(-1);
         while (rack.getCurrentPosition() > clear && timer.seconds() < 3);
         rack.setPower(0);
-        turn(10, 0.3, true);
+        absoluteTurn(baseAngle);
+//        turn(10, 0.2, true);
 
-        drive(-3);
-        trueAngle = 0;
+        //drive(-3);
+        //trueAngle = 0;
 
 //        sleep(3);
 //        rack.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -417,5 +440,10 @@ public class MaThreeAutoOp extends LinearOpMode {
 //        telemetry.addData("Position Z: ", pos.z);
 
         telemetry.update();
+    }
+
+    private void dropMarker(double dropPos, long waitTime) {
+        marker.setPosition(dropPos);
+        sleep(waitTime);
     }
 }

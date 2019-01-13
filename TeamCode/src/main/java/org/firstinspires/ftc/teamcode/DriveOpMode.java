@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 public class DriveOpMode extends OpMode {
 
     DcMotor left, right, rack;
-    //    DcMotor slurp;
+    DcMotor slurp;
     DcMotor extend;
     //    DcMotor latch;
     State state = State.DRIVE;
@@ -29,16 +29,13 @@ public class DriveOpMode extends OpMode {
         right = hardwareMap.dcMotor.get("right");
         rack = hardwareMap.dcMotor.get("rack");
 
-//        slurp = hardwareMap.dcMotor.get("slurp");
+        slurp = hardwareMap.dcMotor.get("slurp");
         extend = hardwareMap.dcMotor.get("extend");
 //        latch = hardwareMap.dcMotor.get("latch");
 //        marker = hardwareMap.servo.get("marker");
 
         right.setDirection(DcMotorSimple.Direction.REVERSE);
         rack.setDirection(DcMotorSimple.Direction.REVERSE);
-        rack.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        rack.setTargetPosition(10000);
-        rack.setPower(0.5);
     }
 
     public void loop() {
@@ -76,10 +73,10 @@ public class DriveOpMode extends OpMode {
 
         double auxMult = gamepad2.left_bumper ? 0.5 : (gamepad2.right_bumper ? 0.2 : 1.0);
 
-        //rack.setPower(auxMult * ((gamepad2.dpad_up ? 1 : 0) + (gamepad2.dpad_down ? -1 : 0)));
+        rack.setPower(auxMult * ((gamepad2.dpad_up ? 1 : 0) + (gamepad2.dpad_down ? -1 : 0)));
 
-        extend.setPower(auxMult * gamepad2.left_stick_y);
-//        slurp.setPower(gamepad2.right_stick_y);
+        // extend.setPower(auxMult * gamepad2.left_stick_y);
+        slurp.setPower(auxMult * gamepad2.right_stick_y);
 
 //        latch.setPower(mult * gamepad2.right_stick_x);
 
