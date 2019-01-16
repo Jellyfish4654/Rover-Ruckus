@@ -26,3 +26,6 @@ build/
 
 *ASUS_PC_01*
 
+.project
+.settings/org.eclipse.buildship.core.prefs
+.vscode/launch.json
