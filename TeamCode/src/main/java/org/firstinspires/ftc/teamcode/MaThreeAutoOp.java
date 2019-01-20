@@ -56,7 +56,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         imu.initialize(parameters);
 
-        long interWait = 100;
+        long interWait = 50;
         int gold = 0;
         int drop = 12750, clear = 8850;
         boolean dropPress = false, clearPress = false;
@@ -96,39 +96,38 @@ public class MaThreeAutoOp extends LinearOpMode {
             land(drop, clear);
         }
 
-        gold = sample(0.075);
+        drive("Getting space to sample", 3);
 
+        gold = sample(0.1);
 
-        drive(13.5);
-        sleep(100);
+        drive("Driving to sample turning point", 4);
+        sleep(interWait);
 
-        final double endAngle = depotSide ? -55 : -90, sideAngle = 40;
+        final double endAngle = depotSide ? -55 : -90, sideAngle = 35;
         switch (gold) {
             case 0:
-                turn(0, 0.2, false);
-                drive(13.5);
-                sleep(100);
-                drive(-18.5);
-                sleep(100);
+                turn("Checking angle towards center", 0, 0.3, false);
+                drive("Pushing center mineral", 18.5);
+                sleep(interWait);
+                drive("Backing from central mineral", -18.5);
+                sleep(interWait);
                 break;
             case -1:
             case 1:
                 double dir = gold == -1 ? -1 : 1;
-                turn(sideAngle * dir, 0.1, false);
-                sleep(100);
-                drive(18);
-                sleep(100);
-                drive(-18);
-                sleep(100);
-                turn(-sideAngle * dir);
-                sleep(100);
-                drive(-5);
-                sleep(100);
+                turn("Turning to side mineral", sideAngle * dir, 0.3, false);
+                sleep(interWait);
+                drive("Pushing side mineral", 22);
+                sleep(interWait);
+                drive("Backing from side mineral", -22);
+                sleep(interWait);
+                turn("Realigning turn", -sideAngle * dir);
+                sleep(interWait);
                 break;
         }
 
-        turn(endAngle);
-        sleep(100);
+        turn("Turning towards side", endAngle);
+        sleep(interWait);
 
 //        if (gold == 0) {
 //
@@ -142,39 +141,40 @@ public class MaThreeAutoOp extends LinearOpMode {
 //        }
 
 //        drive(30);
-//        sleep(100);
+//        sleep(interWait);
 //
 //        drive(-13.5);
-//        sleep(100);
+//        sleep(interWait);
 
 
-        drive(-5);
-        sleep(100);
-
-        drive(40, 0.4);
-        sleep(100);
+        drive("Driving towards side", 37.5, 0.4);
+        sleep(interWait);
 
         if (depotSide) {
-            turn(45 - endAngle - 10);
-            sleep(100);
+            turn("Turning right towards depot", 45 - endAngle + 15);
+            sleep(interWait);
         } else {
-            turn(-135 - endAngle);
-            sleep(100);
+            turn("Turning left towards depot", -135 - endAngle);
+            sleep(interWait);
         }
 
-        drive(depotSide ? 40 : 50, 0.4);
-        sleep(100);
+        drive("Driving towards depot", depotSide ? 35 : 45, 0.4);
+        sleep(interWait);
 
-        turn(-25);
+        turn("Turning to deposit", -27);
 
         dropMarker(0.6, 750);
-        turn(33);
-
-
-        drive(-70, 0.5);
-        sleep(100);
-
+        turn("Turning towards crater", 28.5);
         marker.setPosition(1);
+
+        drive("Parking on crater", -70, 0.5);
+        sleep(interWait);
+    }
+
+    private void autoTelemetry(String phase) {
+        telemetry.addLine("Ma3 AutoOp 1.0");
+        telemetry.addData("Phase: ", phase);
+        telemetry.addLine();
     }
 
     private void setPower(double left, double right) {
@@ -190,6 +190,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         rack.setPower(1);
         ElapsedTime timer = new ElapsedTime();
         while (!isStopRequested() && rack.isBusy() && timer.seconds() < 10) {
+            autoTelemetry("Landing (dropping)");
             telemetry.addData("Rack Position: ", rack.getCurrentPosition());
             telemetry.addData("Rack Target: ", rack.getTargetPosition());
             telemetry.update();
@@ -197,13 +198,13 @@ public class MaThreeAutoOp extends LinearOpMode {
         rack.setPower(0);
         rack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        absoluteTurn(baseAngle + 10);
+        absoluteTurn("Landing (unhooking)", (baseAngle + 10));
 //        turn(-10, 0.25, true);
         timer.reset();
         rack.setPower(-1);
-        while (rack.getCurrentPosition() > clear && timer.seconds() < 3);
+        while (!isStopRequested() && rack.getCurrentPosition() > clear && timer.seconds() < 3);
         rack.setPower(0);
-        absoluteTurn(baseAngle);
+        absoluteTurn("Landing (realigning)", baseAngle);
 //        turn(10, 0.2, true);
 
         //drive(-3);
@@ -221,7 +222,7 @@ public class MaThreeAutoOp extends LinearOpMode {
     }
 
     private int sample(double power) {
-        turn(35);
+        turn("Sampling (pre-turn)", 35);
 
         GoldAlignDetector detector;
 
@@ -247,10 +248,10 @@ public class MaThreeAutoOp extends LinearOpMode {
 
         detector.enable(); // Start the detector!
 
+        autoTelemetry("Sampling (inter)");
         telemetry.addData("X Position: ", detector.getXPosition());
         telemetry.addData("True Angle: ", trueAngle);
         telemetry.addData("Angle: ", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
-
         telemetry.update();
         sleep(100);
 
@@ -274,6 +275,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         while(!isStopRequested() && !detector.isFound() && delta < 50) {
             angle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
             delta = Math.abs(angle - trueAngle);
+            autoTelemetry("Sampling (searching)");
             telemetry.addData("Delta: ", delta);
             telemetry.update();
         }
@@ -284,6 +286,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         int gold = delta < 15 ? -1 : (delta > 30 ? 1 : 0);
 
         double x = detector.getXPosition();
+        autoTelemetry("Sampling (found)");
         telemetry.addData("Delta: ", delta);
         telemetry.addData("X Position: ", x);
         telemetry.addData("Gold Position: ", gold);
@@ -291,15 +294,15 @@ public class MaThreeAutoOp extends LinearOpMode {
 
         sleep(100);
 
-        turn(-35);
+        turn("Sampling (post-turn)", -35);
         return gold;
     }
 
-    private void drive(double inches) {
-        drive(inches, 0.25);
+    private void drive(String phase, double inches) {
+        drive(phase, inches, 0.25);
     }
 
-    private void drive(double inches, double power) {
+    private void drive(String phase, double inches, double power) {
         // 2240 ticks per motor rotation, 40 tooth motor sprocket, 20 tooth wheel sprockets, 90mm wheels
 
         leftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -313,6 +316,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         setPower(power, power);
 
         while(!isStopRequested() && (leftDrive.isBusy() || rightDrive.isBusy())) {
+            autoTelemetry(phase);
             driveTelemetry();
         }
 
@@ -333,17 +337,17 @@ public class MaThreeAutoOp extends LinearOpMode {
     }
 
 
-    private void absoluteTurn(double degrees) {
+    private void absoluteTurn(String phase, double degrees) {
         trueAngle = degrees;
-        turn(0);
+        turn(phase, 0);
     }
 
-    private void turn(double degrees) {
-        turn(degrees, 0.2, false);
+    private void turn(String phase, double degrees) {
+        turn(phase, degrees, 0.4, false);
     }
 
     final double startSlow = 50, endSlow = 5, minSlow = 0.2;
-    private void turn(double degrees, double power, boolean ignoreCurve) {
+    private void turn(String phase, double degrees, double power, boolean ignoreCurve) {
         trueAngle -= degrees;
 
         leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -373,6 +377,7 @@ public class MaThreeAutoOp extends LinearOpMode {
             }
             setPower(-dir * speed, dir * speed);
 
+            autoTelemetry(phase);
             turnTelemetry(speed, initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
         }
         setPower(0, 0);
