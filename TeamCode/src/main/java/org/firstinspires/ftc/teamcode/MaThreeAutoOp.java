@@ -43,7 +43,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         leftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
         rack.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        marker.setPosition(1);
+        marker.setPosition(0);
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -58,7 +58,7 @@ public class MaThreeAutoOp extends LinearOpMode {
 
         long interWait = 50;
         int gold = 0;
-        int drop = 12750, clear = 8850;
+        int drop = 12500, clear = 8850;
         boolean dropPress = false, clearPress = false;
         boolean land = true;
         boolean depotSide = true;
@@ -82,7 +82,7 @@ public class MaThreeAutoOp extends LinearOpMode {
             telemetry.addData("Clear: ", clear);
             telemetry.addData("depotSide: ", depotSide);
             telemetry.addData("Land: ", land);
-            telemetry.addData("Angle: ", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+            telemetry.addData("Angle: ", getAngle());
             telemetry.update();
         }
 
@@ -90,7 +90,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         // START
 
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
-        baseAngle = trueAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle + 3;
+        baseAngle = trueAngle = getAngle();
 
         if (land) {
             land(drop, clear);
@@ -111,29 +111,30 @@ public class MaThreeAutoOp extends LinearOpMode {
                 sleep(interWait);
                 drive("Backing from central mineral", -18.5);
                 sleep(interWait);
+                turn("Turning towards side", endAngle);
+                sleep(interWait);
                 break;
             case -1:
             case 1:
                 double dir = gold == -1 ? -1 : 1;
                 turn("Turning to side mineral", sideAngle * dir, 0.3, false);
                 sleep(interWait);
-                drive("Pushing side mineral", 22);
+                drive("Pushing side mineral", 23);
                 sleep(interWait);
-                drive("Backing from side mineral", -22);
+                drive("Backing from side mineral", -23);
                 sleep(interWait);
-                turn("Realigning turn", -sideAngle * dir);
+                turn("Turning towards side", endAngle - sideAngle * dir);
                 sleep(interWait);
                 break;
         }
 
-        turn("Turning towards side", endAngle);
-        sleep(interWait);
+
 
 //        if (gold == 0) {
 //
 //        } else {
 //            telemetry.addData("True Angle: ", trueAngle);
-//            telemetry.addData("Angle: ", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+//            telemetry.addData("Angle: ", getAngle());
 //
 //            telemetry.update();
 //
@@ -147,28 +148,32 @@ public class MaThreeAutoOp extends LinearOpMode {
 //        sleep(interWait);
 
 
-        drive("Driving towards side", 37.5, 0.4);
+        drive("Driving towards side", 42, 0.4);
         sleep(interWait);
 
         if (depotSide) {
-            turn("Turning right towards depot", 45 - endAngle + 15);
+            turn("Turning right towards depot", -135 - endAngle + 5);
             sleep(interWait);
         } else {
-            turn("Turning left towards depot", -135 - endAngle);
+            turn("Turning left towards depot", 45 - endAngle);
             sleep(interWait);
         }
 
-        drive("Driving towards depot", depotSide ? 35 : 45, 0.4);
+        drive("Driving towards depot", depotSide ? -36 : -45, 0.4);
         sleep(interWait);
 
-        turn("Turning to deposit", -27);
+//        turn("Turning to deposit", -27);
 
-        dropMarker(0.6, 750);
-        turn("Turning towards crater", 28.5);
-        marker.setPosition(1);
+        dropMarker(0.35, 750);
+//        turn("Turning towards crater", 28.5);
+        marker.setPosition(0);
 
-        drive("Parking on crater", -70, 0.5);
+        drive("Parking on crater", 62, 0.5);
         sleep(interWait);
+    }
+
+    private double getAngle() {
+        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
     }
 
     private void autoTelemetry(String phase) {
@@ -198,7 +203,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         rack.setPower(0);
         rack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        absoluteTurn("Landing (unhooking)", (baseAngle + 10));
+        absoluteTurn("Landing (unhooking)", (baseAngle + 10), 0.7);
 //        turn(-10, 0.25, true);
         timer.reset();
         rack.setPower(-1);
@@ -222,7 +227,7 @@ public class MaThreeAutoOp extends LinearOpMode {
     }
 
     private int sample(double power) {
-        turn("Sampling (pre-turn)", 35);
+        turn("Sampling (pre-turn)", 25);
 
         GoldAlignDetector detector;
 
@@ -251,7 +256,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         autoTelemetry("Sampling (inter)");
         telemetry.addData("X Position: ", detector.getXPosition());
         telemetry.addData("True Angle: ", trueAngle);
-        telemetry.addData("Angle: ", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+        telemetry.addData("Angle: ", getAngle());
         telemetry.update();
         sleep(100);
 
@@ -262,7 +267,7 @@ public class MaThreeAutoOp extends LinearOpMode {
 //        while(!isStopRequested()) {
 //            setPower(power * gamepad1.left_stick_x, -power * gamepad1.left_stick_x);
 //
-//            angle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+//            angle = getAngle();
 //            delta = Math.abs(angle - trueAngle);
 //            telemetry.addData("Delta: ", delta);
 //            telemetry.addData("X Position: ", detector.getXPosition());
@@ -273,7 +278,7 @@ public class MaThreeAutoOp extends LinearOpMode {
 //        }
 
         while(!isStopRequested() && !detector.isFound() && delta < 50) {
-            angle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+            angle = getAngle();
             delta = Math.abs(angle - trueAngle);
             autoTelemetry("Sampling (searching)");
             telemetry.addData("Delta: ", delta);
@@ -283,7 +288,7 @@ public class MaThreeAutoOp extends LinearOpMode {
 
         detector.disable();
 
-        int gold = delta < 15 ? -1 : (delta > 30 ? 1 : 0);
+        int gold = delta < 20 ? -1 : (delta > 45 ? 1 : 0);
 
         double x = detector.getXPosition();
         autoTelemetry("Sampling (found)");
@@ -294,7 +299,7 @@ public class MaThreeAutoOp extends LinearOpMode {
 
         sleep(100);
 
-        turn("Sampling (post-turn)", -35);
+        turn("Sampling (post-turn)", -25);
         return gold;
     }
 
@@ -336,10 +341,14 @@ public class MaThreeAutoOp extends LinearOpMode {
         telemetry.update();
     }
 
-
     private void absoluteTurn(String phase, double degrees) {
         trueAngle = degrees;
         turn(phase, 0);
+    }
+
+    private void absoluteTurn(String phase, double degrees, double power) {
+        trueAngle = degrees;
+        turn(phase, 0, power, false);
     }
 
     private void turn(String phase, double degrees) {
@@ -353,7 +362,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        double initialAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+        double initialAngle = getAngle();
         double currentAngle = initialAngle;
         double targetAngle = trueAngle;
         if (targetAngle > 180)
@@ -366,7 +375,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         double dir = Math.abs(delta) / delta;
 
         while (!isStopRequested() && !(delta * dir <= 0 && lastDelta * dir >= 0)) {
-            currentAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+            currentAngle = getAngle();
             lastDelta = delta;
             delta = getDelta(targetAngle, currentAngle);
             double speed;
@@ -383,7 +392,7 @@ public class MaThreeAutoOp extends LinearOpMode {
         setPower(0, 0);
     }
 //    private void vturn(double degrees, double ratio) {
-//        double initialAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+//        double initialAngle = getAngle();
 //        double currentAngle = initialAngle;
 //        double targetAngle = initialAngle - degrees;
 //        if (targetAngle > 180)
@@ -398,7 +407,7 @@ public class MaThreeAutoOp extends LinearOpMode {
 //        turnTelemetry(initialAngle, currentAngle, targetAngle, delta, lastDelta, dir);
 //
 //        while (!isStopRequested() && !(delta * dir <= 0 && lastDelta * dir >= 0)) {
-//            currentAngle = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+//            currentAngle = getAngle()
 //            lastDelta = delta;
 //            delta = getDelta(targetAngle, currentAngle);
 //            double speed = 0; // turnSpeed * (minSlow + (Math.max(endSlow, Math.min(startSlow, Math.abs(delta))) - endSlow) / (startSlow - endSlow) * (1 - minSlow));

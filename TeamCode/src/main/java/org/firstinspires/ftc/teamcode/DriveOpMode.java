@@ -12,8 +12,9 @@ public class DriveOpMode extends OpMode {
 
     DcMotor left, right, rack;
     DcMotor slurp;
-    DcMotor extend;
+  //  DcMotor extend;
     //    DcMotor latch;
+//    Servo marker;
     State state = State.DRIVE;
 
 //    Servo marker;
@@ -30,9 +31,9 @@ public class DriveOpMode extends OpMode {
         rack = hardwareMap.dcMotor.get("rack");
 
         slurp = hardwareMap.dcMotor.get("slurp");
-        extend = hardwareMap.dcMotor.get("extend");
+//        extend = hardwareMap.dcMotor.get("extend");
 //        latch = hardwareMap.dcMotor.get("latch");
-//        marker = hardwareMap.servo.get("marker");
+//        /marker = hardwareMap.servo.get("marker");
 
         right.setDirection(DcMotorSimple.Direction.REVERSE);
         rack.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -40,6 +41,9 @@ public class DriveOpMode extends OpMode {
 
     public void loop() {
         // DRIVE CONTROLS
+
+//        telemetry.addData("Marker: ", marker.getPosition());
+//        marker.setPosition(gamepad2.left_stick_y);
 
         double driveMult = gamepad1.left_bumper ? 0.5 : (gamepad1.right_bumper ? 0.2 : 1.0);
 
@@ -78,16 +82,16 @@ public class DriveOpMode extends OpMode {
         // extend.setPower(auxMult * gamepad2.left_stick_y);
         slurp.setPower(auxMult * gamepad2.right_stick_y);
 
-//        latch.setPower(mult * gamepad2.right_stick_x);
 
-        if (gamepad2.a) {
-            rack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            rack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        }
+//        if (gamepad2.a) {
+//            rack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//            rack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        }
 
         // TELEMETRY
 
         telemetry.addData("Drive Mode: ", state);
         telemetry.addData("Rack Encoder: ", rack.getCurrentPosition());
+        telemetry.addData("G2 RS Y: ", gamepad2.right_stick_y);
     }
 }
