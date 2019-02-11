@@ -43,8 +43,6 @@ public class MaThreeAutoOp extends LinearOpMode {
         leftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
         rack.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        marker.setPosition(0);
-
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
         parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
@@ -56,13 +54,16 @@ public class MaThreeAutoOp extends LinearOpMode {
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         imu.initialize(parameters);
 
-        long interWait = 50;
+        long interWait = 30;
         int gold = 0;
-        int drop = 12500, clear = 8850;
+        int drop = 13000, clear = 8850;
+        double markerHold = 0.2, markerDrop = 0.6;
         boolean dropPress = false, clearPress = false;
         boolean land = true;
         boolean depotSide = true;
+        boolean safeEnd = false;
 
+        marker.setPosition(markerHold);
 
         // Set up variables during init
         while(!isStarted() && !isStopRequested()) {
@@ -73,6 +74,7 @@ public class MaThreeAutoOp extends LinearOpMode {
                 clear += gamepad2.dpad_up ? 10 : (gamepad2.dpad_down ? -10 : 0);
             depotSide = gamepad1.a ? false : (gamepad1.b ? true : depotSide);
             land = gamepad2.a ? false : (gamepad2.b ? true : land);
+            safeEnd = gamepad1.x ? false : (gamepad1.y ? true : safeEnd);
 
             dropPress = gamepad2.dpad_up;
             clearPress = gamepad2.dpad_down;
@@ -83,6 +85,7 @@ public class MaThreeAutoOp extends LinearOpMode {
             telemetry.addData("depotSide: ", depotSide);
             telemetry.addData("Land: ", land);
             telemetry.addData("Angle: ", getAngle());
+            telemetry.addData("Safe End: ", safeEnd);
             telemetry.update();
         }
 
@@ -148,28 +151,32 @@ public class MaThreeAutoOp extends LinearOpMode {
 //        sleep(interWait);
 
 
-        drive("Driving towards side", 42, 0.4);
+        drive("Driving towards side", 40, 0.5);
         sleep(interWait);
 
         if (depotSide) {
-            turn("Turning right towards depot", -135 - endAngle + 5);
+            turn("Turning right towards depot", -135 - endAngle + 6);
             sleep(interWait);
         } else {
             turn("Turning left towards depot", 45 - endAngle);
             sleep(interWait);
         }
 
-        drive("Driving towards depot", depotSide ? -36 : -45, 0.4);
-        sleep(interWait);
+        drive("Driving towards depot", depotSide ? -38 : -45, 0.4);
+//        sleep(interWait);
 
-//        turn("Turning to deposit", -27);
 
-        dropMarker(0.35, 750);
-//        turn("Turning towards crater", 28.5);
-        marker.setPosition(0);
+        dropMarker(markerHold, markerDrop, 500, 300);
 
-        drive("Parking on crater", 62, 0.5);
-        sleep(interWait);
+        if (!safeEnd) {
+            turn("DE-MAJOR-PENALIFICATION TURN", 4);
+            sleep(interWait);
+            drive("Parking on crater", 65, 0.5);
+        } else {
+            turn("Safe turn", 5);
+            sleep(interWait);
+            drive("Moving to safe park", 15);
+        }
     }
 
     private double getAngle() {
@@ -304,7 +311,7 @@ public class MaThreeAutoOp extends LinearOpMode {
     }
 
     private void drive(String phase, double inches) {
-        drive(phase, inches, 0.25);
+        drive(phase, inches, 0.35);
     }
 
     private void drive(String phase, double inches, double power) {
@@ -352,7 +359,7 @@ public class MaThreeAutoOp extends LinearOpMode {
     }
 
     private void turn(String phase, double degrees) {
-        turn(phase, degrees, 0.4, false);
+        turn(phase, degrees, 0.5, false);
     }
 
     final double startSlow = 50, endSlow = 5, minSlow = 0.2;
@@ -456,8 +463,10 @@ public class MaThreeAutoOp extends LinearOpMode {
         telemetry.update();
     }
 
-    private void dropMarker(double dropPos, long waitTime) {
+    private void dropMarker(double holdPos, double dropPos, long openTime, long closeTime) {
         marker.setPosition(dropPos);
-        sleep(waitTime);
+        sleep(openTime);
+        marker.setPosition(holdPos);
+        sleep(closeTime);
     }
 }
