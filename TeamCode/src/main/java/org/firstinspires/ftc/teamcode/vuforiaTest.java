@@ -29,10 +29,11 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Autonomous(name = "VuForia Test")
 
-public class VuforiaTest extends LinearOpMode {
+public class vuforiaTest extends LinearOpMode {
     // Vuforia license key
     private static final String VUFORIA_Key = "";
 
@@ -42,7 +43,7 @@ public class VuforiaTest extends LinearOpMode {
     private static final float mmTargetHeight = (6) * mmPerInch;
 
     // Camera being used on phone
-    private static final VuforiaLocalizer.CameraDirection CAMERA_CHOICE = Back;
+    private static final VuforiaLocalizer.CameraDirection CAMERA_CHOICE = BACK;
 
     private OpenGLMatrix lastLocation = null;
     private boolean targetVisible = false;
@@ -58,13 +59,14 @@ public class VuforiaTest extends LinearOpMode {
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
 
         parameters.vuforiaLicenseKey = VUFORIA_Key;
-        parameters.CameraDirection = CAMERA_CHOICE;
+        parameters.cameraDirection = CAMERA_CHOICE;
 
         // Instance Vuforia engine
-        vuforia = ClassFactory.getinstance().createVuforia(parameters);
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
 
         // Load data sets for tracking objects. Stored in assets
         VuforiaTrackables targetsRoverRuckus = this.vuforia.loadTrackablesFromAsset("RoverRuckus");
+        VuforiaTrackable blueRover = targetsRoverRuckus.get(0);
         blueRover.setName("Blue-Rover");
         VuforiaTrackable redFootprint = targetsRoverRuckus.get(1);
         redFootprint.setName("Red-Footprint");
@@ -74,7 +76,7 @@ public class VuforiaTest extends LinearOpMode {
         backSpace.setName("Back-Space");
 
         List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
-        allTrackables.addall(targetsRoverRuckus);
+        allTrackables.addAll(targetsRoverRuckus);
 
     }
 }
