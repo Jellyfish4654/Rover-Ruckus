@@ -28,28 +28,31 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
+import java.util.ArrayList;
+
 @Autonomous(name = "VuForia Test")
 
 public class VuforiaTest extends LinearOpMode {
     // Vuforia license key
-    private static final String VUFORIA_Key = ""; 
+    private static final String VUFORIA_Key = "";
 
     // Field dimensions
     private static final float mmPerInch = 25.4f;
     private static final float mmFieldWidth = (12 * 6) * mmPerInch;
     private static final float mmTargetHeight = (6) * mmPerInch;
 
-    //Camera being used on phone
+    // Camera being used on phone
     private static final VuforiaLocalizer.CameraDirection CAMERA_CHOICE = Back;
 
     private OpenGLMatrix lastLocation = null;
     private boolean targetVisible = false;
 
-    //Localization engine variable
+    // Localization engine variable
     VuforiaLocalizer vuforia;
 
-    @Override public void runOpMode(){
-        //Camera Preview Paramater object creation
+    @Override
+    public void runOpMode() {
+        // Camera Preview Paramater object creation
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id",
                 hardwareMap.appContext.getPackageName());
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
@@ -57,9 +60,21 @@ public class VuforiaTest extends LinearOpMode {
         parameters.vuforiaLicenseKey = VUFORIA_Key;
         parameters.CameraDirection = CAMERA_CHOICE;
 
-        //Instance Vuforia engine
+        // Instance Vuforia engine
         vuforia = ClassFactory.getinstance().createVuforia(parameters);
 
-        
+        // Load data sets for tracking objects. Stored in assets
+        VuforiaTrackables targetsRoverRuckus = this.vuforia.loadTrackablesFromAsset("RoverRuckus");
+        blueRover.setName("Blue-Rover");
+        VuforiaTrackable redFootprint = targetsRoverRuckus.get(1);
+        redFootprint.setName("Red-Footprint");
+        VuforiaTrackable frontCraters = targetsRoverRuckus.get(2);
+        frontCraters.setName("Front-Craters");
+        VuforiaTrackable backSpace = targetsRoverRuckus.get(3);
+        backSpace.setName("Back-Space");
+
+        List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
+        allTrackables.addall(targetsRoverRuckus);
+
     }
 }
