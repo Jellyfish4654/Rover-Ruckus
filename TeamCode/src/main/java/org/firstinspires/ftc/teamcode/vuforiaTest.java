@@ -45,6 +45,11 @@ public class vuforiaTest extends LinearOpMode {
     // Camera being used on phone
     private static final VuforiaLocalizer.CameraDirection CAMERA_CHOICE = BACK;
 
+    // Camera config
+    final int CAMERA_FORWARD_DISPLACEMENT = 110; // eg: Camera is 110 mm in front of robot center
+    final int CAMERA_VERTICAL_DISPLACEMENT = 200; // eg: Camera is 200 mm above ground
+    final int CAMERA_LEFT_DISPLACEMENT = 0; // eg: Camera is ON the robot's center line
+
     private OpenGLMatrix lastLocation = null;
     private boolean targetVisible = false;
 
@@ -78,5 +83,62 @@ public class vuforiaTest extends LinearOpMode {
         List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
         allTrackables.addAll(targetsRoverRuckus);
 
+        /*
+         * Starting from Red Alliance Station looking to the center, - X axis runs from
+         * Left to Right - Y axis runs from the Red Alliance Station to the Blue
+         * Allience Station - Z axis runs from the floor and up Default location is
+         * origin at the center of the field, rotated facing up
+         */
+
+        // Placing BlueRover target into the middle of the blue perimeter wall
+
+        OpenGLMatrix blueRoverLocationOnField = OpenGlMatrix.translation(0, mmFieldWidth, mmTargetHeight)
+                // Translation onto the blue perimeter wall
+                .multiplied(Orientation.getRotationMatrix(EXTRINSIC, xyz, DEGREES, 90, 0, 0)); // Coordinate system does
+                                                                                               // not rotate, order of
+                                                                                               // values given after
+                                                                                               // setting unit, unit
+                                                                                               // set, rotate on x axis
+                                                                                               // 90
+        // Rotate it 90 degrees on field x axis
+        blueRover.setlocation(blueRoverLocationOnField); // Set Matrix locations to blueRover
+
+        // Placing redFootprint target onto the middle of the red perimeter wall
+        OpenGLMatrix redFootprintLocationOnField = OpenGLMatrix.translation(0, -mmFieldWidth, mmTargetHeight)
+                .multiplied(Orientation.getRotationMatrix(EXTRINSIC, xyz, DEGREES, 90, 0, 180));
+        redFootprint.setlocation(redFootprintLocationOnField);
+
+        // Placing FrontCraters target onto the middle of the front perimeter wall
+        OpenGLMatrix frontCratersLocationOnField = OpenGLMatrix.translation(-mmFTCFieldWidth, 0, mmTargetHeight)
+                .multiplied(Orientation.getRotationMatrix(EXTRINSIC, XYZ, DEGREES, 90, 0, 90));
+        frontCraters.setLocation(frontCratersLocationOnField);
+
+        // Placing BackSpace target onto the middle of the back perimeter wall
+        OpenGLMatrix backSpaceLocationOnField = OpenGLMatrix.translation(mmFTCFieldWidth, 0, mmTargetHeight)
+                .multiplied(Orientation.getRotationMatrix(EXTRINSIC, XYZ, DEGREES, 90, 0, -90));
+        backSpace.setLocation(backSpaceLocationOnField);
+
+        // Set phone camera location
+        OpenGLMatrix phoneLocationOnRobot = OpenGLMatrix
+                .translation(CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT)
+                .multiplied(Orientation.getRotationMatrix(EXTRINSIC, YZX, DEGREES, CAMERA_CHOICE == FRONT ? 90 : -90, 0,
+                        0));
+
+        // Allow for trackable listeners to know where the camera is
+        for (VuforiaTrackable trackable : allTrackables) {
+            ((VuforiaTrackableDefaultListener) trackable.getListener()).setPhoneInformation(phoneLocationOnRobot,
+                    parameters.cameraDirection);
+        }
+
+        // Wait for game start
+        telemetry.addData(">>", "Press Play to start tracking");
+        telemetry.update();
+        waitForStart();
+
+        // Start tracking targets
+        targetsRoverRuckus.activate();
+        while (opModeIsActive()) {
+
+        }
     }
 }

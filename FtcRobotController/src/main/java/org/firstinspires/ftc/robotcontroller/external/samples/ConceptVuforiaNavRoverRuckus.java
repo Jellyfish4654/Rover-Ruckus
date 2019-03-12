@@ -164,7 +164,7 @@ public class ConceptVuforiaNavRoverRuckus extends LinearOpMode {
         /**
          * In order for localization to work, we need to tell the system where each target is on the field, and
          * where the phone resides on the robot.  These specifications are in the form of <em>transformation matrices.</em>
-         * Transformation matrices are a central, important concept in the mat;h here involved in localization.
+         * Transformation matrices are a central, important concept in the math here involved in localization.
          * See <a href="https://en.wikipedia.org/wiki/Transformation_matrix">Transformation Matrix</a>
          * for detailed information. Commonly, you'll encounter transformation matrices as instances
          * of the {@link OpenGLMatrix} class.
