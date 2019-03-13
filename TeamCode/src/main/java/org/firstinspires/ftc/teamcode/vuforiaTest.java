@@ -138,7 +138,10 @@ public class vuforiaTest extends LinearOpMode {
         // Start tracking targets
         targetsRoverRuckus.activate();
         while (opModeIsActive()) {
+            targetVisible = false;
+            for (VuforiaTrackable trackable : allTrackables) {
 
+            }
         }
     }
 }
