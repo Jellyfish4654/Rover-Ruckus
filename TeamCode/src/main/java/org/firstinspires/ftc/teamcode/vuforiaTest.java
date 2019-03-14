@@ -38,14 +38,13 @@ import java.util.List;
 @Autonomous(name = "VuForia Test")
 
 public class VuforiaTest extends LinearOpMode {
-        // Define motors/IMU
-        DcMotor leftdrive, rightdrive;
-        DcMotor rack;
-        Servo marker;
-
-        BNO055IMU imu;
-
-        double baseangle, trueangle;
+        // Parameters
+        final long interWait = 100;
+        final int gold = 0;
+        final int drop = 12750, clear = 8850;
+        boolean dropPress = false, clearPress = false;
+        boolean land = true;
+        boolean depotSide = true;
 
         // Vuforia license key
         private static final String VUFORIA_Key = "AV7cAYn/////AAAAGXDR1Nv900lOoewPO1Nq3ypDBIfk+d8X+UJOgVQZn5ZvQIY5Y4yGL6DVf24bEoMOVLCq5sZXPs9937r2zpeSZQaaaJbxeWggveVuvccsVlBdR38brId6fIRi/ssxtkUpVppCaRDO1N6K7IVbAJWrhpv1rG2DqTcS51znxjEYDE34AN6sNkurIq/qs0tLfvI+lx5VYRKdqh5LwnVt2HnpdX836kSbAN/1wnupzlLSKHcVPF9zlmRjCXrHduW8ikVefKAPGNCEzaDj4D+X+YM9iaHj9H8qN23bbaT81Ze3g5WwrXsb6dsX1N3+FqeXbiEUB02lXsmGwtvCJI89xutgPzlDAHqerduaLS2WZbL3oVyS";
@@ -69,15 +68,49 @@ public class VuforiaTest extends LinearOpMode {
         // Localization engine variable
         VuforiaLocalizer vuforia;
 
+        // Define motors/IMU
+        DcMotor leftdrive, rightdrive;
+        DcMotor rack;
+        Servo marker;
+
+        BNO055IMU imu;
+
+        double baseangle, trueangle;
+
         @Override
         public void runOpMode() {
-                //Define space
+                // INITIALIZATION
+                leftDrive = hardwareMap.dcMotor.get("left");
+                rightDrive = hardwareMap.dcMotor.get("right");
+                rack = hardwareMap.dcMotor.get("rack");
+                marker = hardwareMap.servo.get("marker");
+
+                leftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
+                rack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+                marker.setPosition(1);
+
+                // IMU setup
+                BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+                parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+                parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+                parameters.calibrationDataFile = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
+                parameters.loggingEnabled = true;
+                parameters.loggingTag = "IMU";
+                parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+                imu = hardwareMap.get(BNO055IMU.class, "imu");
+                imu.initialize(parameters);
+
+                // Initialize tracking space
                 initVuforia();
 
+                // Start
                 waitForStart();
 
                 // Start tracking targets
                 targetsRoverRuckus.activate();
+
                 while (opModeIsActive()) {
                         // check all the trackable target to see which one (if any) is visible.
                         targetVisible = false;
