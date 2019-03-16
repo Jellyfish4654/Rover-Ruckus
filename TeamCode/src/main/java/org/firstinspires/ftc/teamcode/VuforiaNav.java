@@ -49,11 +49,11 @@ public class VuforiaNav {
     private OpenGLMatrix lastLocation = null;
 
     // Nav data
-    private boolean targetFound = false;
+    private boolean targetVisible = false;
     private String targetName = null;
-    private double robotX = 0; // X displacement from target center
-    private double robotY = 0;
-    private double robotZ = 0; // Height displacement
+    private double robotX; // X displacement from target center
+    private double robotY;
+    private double robotZ; // Height displacement
     private double robotBearing;
     private double relativeBearing;
     private double targetBearing;
@@ -65,9 +65,10 @@ public class VuforiaNav {
     private static final float mmTargetHeight = (6) * mmPerInch;
 
     // Vuforia license key
-    private static final String VUFORIA_Key = "AV7cAYn/////AAAAGXDR1Nv900lOoewPO1Nq3ypDBIfk+d8X+UJOgVQZn5ZvQIY5Y4yGL6DVf24bEoMOVLCq5sZXPs9937r2zpeSZQaaaJbxeWggveVuvccsVlBdR38brId6fIRi/ssxtkUpVppCaRDO1N6K7IVbAJWrhpv1rG2DqTcS51znxjEYDE34AN6sNkurIq/qs0tLfvI+lx5VYRKdqh5LwnVt2HnpdX836kSbAN/1wnupzlLSKHcVPF9zlmRjCXrHduW8ikVefKAPGNCEzaDj4D+X+YM9iaHj9H8qN23bbaT81Ze3g5WwrXsb6dsX1N3+FqeXbiEUB02lXsmGwtvCJI89xutgPzlDAHqerduaLS2WZbL3oVyS";
+    private static final String VUFORIA_KEY = "AV7cAYn/////AAAAGXDR1Nv900lOoewPO1Nq3ypDBIfk+d8X+UJOgVQZn5ZvQIY5Y4yGL6DVf24bEoMOVLCq5sZXPs9937r2zpeSZQaaaJbxeWggveVuvccsVlBdR38brId6fIRi/ssxtkUpVppCaRDO1N6K7IVbAJWrhpv1rG2DqTcS51znxjEYDE34AN6sNkurIq/qs0tLfvI+lx5VYRKdqh5LwnVt2HnpdX836kSbAN/1wnupzlLSKHcVPF9zlmRjCXrHduW8ikVefKAPGNCEzaDj4D+X+YM9iaHj9H8qN23bbaT81Ze3g5WwrXsb6dsX1N3+FqeXbiEUB02lXsmGwtvCJI89xutgPzlDAHqerduaLS2WZbL3oVyS";
 
     VuforiaLocalizer vuforia;
+    List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
 
     public void initVuforia() {
         // Camera Preview Paramater object creation
@@ -76,7 +77,7 @@ public class VuforiaNav {
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
 
         // Set vuforia parameters
-        parameters.vuforiaLicenseKey = VUFORIA_Key;
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
         parameters.cameraDirection = CAMERA_CHOICE;
 
         vuforia = ClassFactory.getInstance().createVuforia(parameters);
@@ -91,7 +92,6 @@ public class VuforiaNav {
         VuforiaTrackable backSpace = targets.get(3);
         backSpace.setName("Back-Space");
 
-        List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
         allTrackables.addAll(targets);
 
         /*
@@ -139,53 +139,58 @@ public class VuforiaNav {
     // cycles through all targets until one is found.
     public boolean targetsVisible() {
         int targetTestID = 0;
-
-        while ((targetTestID < MAX_TARGETS) && !targetFound) {
+        updateNav();
+        while ((targetTestID < MAX_TARGETS) && !targetVisible) {
             targetTestID++;
         }
-        return (targetFound);
+        return (targetVisible);
     }
 
-    public boolean targetIsVisible(int targetID) {
-        VuforiaTrackable target = targets.get(targetID);
-        VuforiaTrackableDefaultListener listener = (VuforiaTrackableDefaultListener) target.getListener();
+    public void updateNav() {
+        targetVisible = false;
+        for (VuforiaTrackable trackable : allTrackables) {
+            if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
+                linearOpMode.telemetry.addData("Visible Target", trackable.getName());
+                targetVisible = true;
 
-        if ((target != null) && (listener != null) && listener.isVisible()) {
-            targetFound = true;
-            targetName = target.getName();
-
-            // Update tracking if target is found
-            lastLocation = listener.getUpdatedRobotLocation();
-            if (lastLocation != null) {
-                VectorF trans = lastLocation.getTranslation();
-                Orientation rot = Orientation.getOrientation(lastLocation, AxesReference.EXTRINSIC, AxesOrder.XYZ,
-                        AngleUnit.DEGREES);
-
-                // Robot position is defined by the standard Matrix translation (x and y)
-                robotX = trans.get(0);
-                robotY = trans.get(1);
-                robotZ = trans.get(2);
-
-                // Robot bearing (in +vc CCW cartesian system) is defined by the standard Matrix
-                // z rotation
-                robotBearing = rot.thirdAngle;
-
-                // target range is based on distance from robot position to origin.
-                targetRange = Math.hypot(robotX, robotY);
-
-                // target bearing is based on angle formed between the X axis to the target
-                // range line
-                targetBearing = Math.toDegrees(-Math.asin(robotY / targetRange));
-
-                // Target relative bearing is the target Heading relative to the direction the
-                // robot is pointing.
-                relativeBearing = targetBearing - robotBearing;
+                // getUpdatedRobotLocation() will return null if no new information is available
+                // since
+                // the last time that call was made, or if the trackable is not currently
+                // visible.
+                OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener())
+                        .getUpdatedRobotLocation();
+                if (robotLocationTransform != null) {
+                    lastLocation = robotLocationTransform;
+                }
+                break;
             }
-        } else {
-            targetFound = false;
-            targetName = "None";
         }
-        return targetFound;
+
+        // Provide feedback as to where the robot is located (if we know).
+        if (targetVisible) {
+            VectorF trans = lastLocation.getTranslation();
+            Orientation rot = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
+
+            robotX = trans.get(0);
+            robotY = trans.get(1);
+            robotZ = trans.get(2);
+
+            // Robot bearing (in +vc CCW cartesian system) is defined by the standard Matrix
+            // z rotation
+            robotBearing = rot.thirdAngle;
+
+            // target range is based on distance from robot position to origin.
+            targetRange = Math.hypot(robotX, robotY);
+
+            // target bearing is based on angle formed between the X axis to the target
+            // range line
+            targetBearing = Math.toDegrees(-Math.asin(robotY / targetRange));
+
+            // Target relative bearing is the target Heading relative to the direction the
+            // robot is pointing.
+            relativeBearing = targetBearing - robotBearing;
+        }
+        addNavTelemetry();
     }
 
     public void activateNavigation() {
@@ -194,7 +199,7 @@ public class VuforiaNav {
     }
 
     public void addNavTelemetry() {
-        if (targetFound) {
+        if (targetVisible) {
             // Display the current visible target name, robot info, target info, and
             // required robot action.
             linearOpMode.telemetry.addData("Visible", targetName);
@@ -211,20 +216,39 @@ public class VuforiaNav {
         }
     }
 
+    // check if is at target X Pos
     public boolean atXPos(double targetXPos) {
-        VectorF translation = lastLocation.getTranslation();
-        if (translation.get(0) == targetXPos)
-            return true;
-        else
-            return false;
+        boolean closeEnough;
+        updateNav();
+        closeEnough = (Math.abs(robotX - targetXPos) < CLOSE_ENOUGH);
+        return closeEnough;
     }
 
+    // check if is at target Y Pos
     public boolean atYPos(double targetYPos) {
-        VectorF translation = lastLocation.getTranslation();
         boolean closeEnough;
-
-        closeEnough = (Math.abs(translation.get(1) - targetYPos) < CLOSE_ENOUGH);
+        updateNav();
+        closeEnough = (Math.abs(robotY - targetYPos) < CLOSE_ENOUGH);
         return closeEnough;
+    }
+
+    // check if is at target Z Pos
+    public boolean atZPos(double targetZPos) {
+        boolean closeEnough;
+        updateNav();
+        closeEnough = (Math.abs(robotZ - targetZPos) < CLOSE_ENOUGH);
+        return closeEnough;
+    }
+
+    public VectorF checkPos() {
+        VectorF translation = lastLocation.getTranslation();
+        return translation;
+    }
+
+    public Orientation checkOri() {
+        Orientation rot = Orientation.getOrientation(lastLocation, AxesReference.EXTRINSIC, AxesOrder.XYZ,
+                AngleUnit.DEGREES);
+        return rot;
     }
 
 }
