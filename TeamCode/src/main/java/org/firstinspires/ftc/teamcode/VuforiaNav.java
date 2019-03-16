@@ -24,6 +24,7 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class VuforiaNav {
@@ -69,6 +70,7 @@ public class VuforiaNav {
 
     VuforiaLocalizer vuforia;
     List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
+    HashMap<String, Double> navData = new HashMap<String, Double>();
 
     public void initVuforia() {
         // Camera Preview Paramater object creation
@@ -189,6 +191,15 @@ public class VuforiaNav {
             // Target relative bearing is the target Heading relative to the direction the
             // robot is pointing.
             relativeBearing = targetBearing - robotBearing;
+
+            // Refresh data onto map
+            navData.put("robotX", robotX);
+            navData.put("robotY", robotY);
+            navData.put("robotZ", robotZ);
+            navData.put("robotBearing", robotBearing);
+            navData.put("targetRange", targetRange);
+            navData.put("targetBearing", targetBearing);
+            navData.put("relativeBearing", relativeBearing);
         }
         addNavTelemetry();
     }
@@ -241,14 +252,20 @@ public class VuforiaNav {
     }
 
     public VectorF checkPos() {
+        updateNav();
         VectorF translation = lastLocation.getTranslation();
         return translation;
     }
 
     public Orientation checkOri() {
+        updateNav();
         Orientation rot = Orientation.getOrientation(lastLocation, AxesReference.EXTRINSIC, AxesOrder.XYZ,
                 AngleUnit.DEGREES);
         return rot;
     }
 
+    public HashMap getNavigation() {
+        updateNav();
+        return navData;
+    }
 }
