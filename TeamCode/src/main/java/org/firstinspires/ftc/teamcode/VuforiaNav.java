@@ -148,6 +148,7 @@ public class VuforiaNav {
         return (targetVisible);
     }
 
+    //Update all navigation data if target visible
     public void updateNav() {
         targetVisible = false;
         for (VuforiaTrackable trackable : allTrackables) {
