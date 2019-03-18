@@ -148,7 +148,7 @@ public class VuforiaNav {
         return (targetVisible);
     }
 
-    //Update all navigation data if target visible
+    // Update all navigation data if target visible
     public void updateNav() {
         targetVisible = false;
         for (VuforiaTrackable trackable : allTrackables) {
@@ -226,6 +226,7 @@ public class VuforiaNav {
         } else {
             linearOpMode.telemetry.addData("Visible", "- - - -");
         }
+        linearOpMode.telemetry.update();
     }
 
     // check if is at target X Pos
