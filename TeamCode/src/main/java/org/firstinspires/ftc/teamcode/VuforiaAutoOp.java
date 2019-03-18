@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.VuforiaNav;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
@@ -75,7 +76,7 @@ public class VuforiaAutoOp extends LinearOpMode {
             telemetry.addData("Clear: ", clear);
             telemetry.addData("depotSide: ", depotSide);
             telemetry.addData("Land: ", land);
-            telemetry.addData("Angle: ", getAngle());
+            telemetry.addData("Angle: ", "--");
             telemetry.addData("Safe End: ", safeEnd);
             telemetry.addData("Use Navigation: ", useNavigation);
             telemetry.update();
@@ -87,18 +88,16 @@ public class VuforiaAutoOp extends LinearOpMode {
         if (land) {
             land(useNavigation, drop, clear);
         }
-
-
     }
 
     public void land(boolean useNavigation, int drop, int clear) {
         if (useNavigation) {
-            rack.setMode(DcMotor.RunMode.STOP);
+            rack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             rack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             rack.setPower(1);
 
-            while(!navigation.atYPos(0)){
-                
+            while (!navigation.atYPos(0)) {
+
             }
 
             rack.setPower(0);
@@ -106,6 +105,5 @@ public class VuforiaAutoOp extends LinearOpMode {
 
         }
     }
-
 
 }
