@@ -67,10 +67,13 @@ public class VuforiaAutoOp extends LinearOpMode {
         boolean depotSide = true;
         boolean safeEnd = false;
         boolean useNavigation = true;
+        boolean navigationDebug = false;
 
         marker.setPosition(markerHold);
 
         while (!isStarted() && !isStopRequested()) {
+            navigationDebug = gamepad1.dpad_left;
+
             telemetry.addData("Gold Position: ", gold);
             telemetry.addData("Drop: ", drop);
             telemetry.addData("Clear: ", clear);
@@ -79,15 +82,30 @@ public class VuforiaAutoOp extends LinearOpMode {
             telemetry.addData("Angle: ", "--");
             telemetry.addData("Safe End: ", safeEnd);
             telemetry.addData("Use Navigation: ", useNavigation);
+            telemetry.addData("Debug Navigation: ", navigationDebug);
             telemetry.update();
         }
 
         // START
         navigation.activateNavigation();
-
-        if (land) {
-            land(useNavigation, drop, clear);
+        if (!navigationDebug) {
+            if (land) {
+                land(useNavigation, drop, clear);
+            }
         }
+        else{
+            while(!isStopRequested()){
+                navigation.updateNav();
+            }
+        }
+    }
+
+    public void turn() {
+
+    }
+
+    public void navTurn() {
+
     }
 
     public void land(boolean useNavigation, int drop, int clear) {
@@ -97,7 +115,6 @@ public class VuforiaAutoOp extends LinearOpMode {
             rack.setPower(1);
 
             while (!navigation.atYPos(0)) {
-
             }
 
             rack.setPower(0);
@@ -105,5 +122,4 @@ public class VuforiaAutoOp extends LinearOpMode {
 
         }
     }
-
 }
