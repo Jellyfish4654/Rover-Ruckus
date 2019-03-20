@@ -45,8 +45,6 @@ public class VuforiaNav {
     public static final double AXIAL_GAIN = 0.0017; // Rate of response for target distance errors
 
     private LinearOpMode linearOpMode;
-    private VuforiaTrackables targets = this.vuforia.loadTrackablesFromAsset("RoverRuckus"); // Load targets into
-                                                                                             // tracking
     private OpenGLMatrix lastLocation = null;
 
     // Nav data
@@ -78,11 +76,17 @@ public class VuforiaNav {
                 .getIdentifier("cameraMonitorViewId", "id", linearOpMode.hardwareMap.appContext.getPackageName());
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
 
-        // Set vuforia parameters
+        // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
         parameters.cameraDirection = CAMERA_CHOICE;
 
+        // Instantiate the Vuforia engine
         vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
+        // Load the data sets that for the trackable objects. These particular data
+        // sets are stored in the 'assets' part of our application.
+        targets = this.vuforia.loadTrackablesFromAsset("RoverRuckus");
 
         // Load data sets for tracking objects. Stored in assets
         VuforiaTrackable blueRover = targets.get(0);

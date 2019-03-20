@@ -31,7 +31,7 @@ public class VuforiaAutoOp extends LinearOpMode {
 
     BNO055IMU imu;
 
-    VuforiaNav navigation;
+    VuforiaNav navigation = new VuforiaNav();
 
     double baseAngle, trueAngle;
 
@@ -92,9 +92,8 @@ public class VuforiaAutoOp extends LinearOpMode {
             if (land) {
                 land(useNavigation, drop, clear);
             }
-        }
-        else{
-            while(!isStopRequested()){
+        } else {
+            while (!isStopRequested()) {
                 navigation.updateNav();
             }
         }
