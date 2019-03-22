@@ -13,7 +13,6 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.VuforiaNav;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
@@ -37,13 +36,13 @@ public class VuforiaAutoOp extends LinearOpMode {
 
     public void runOpMode() {
         // Initialization
-        navigation.initVuforia();
-
+        navigation.initVuforia(this);
+       
         leftDrive = hardwareMap.dcMotor.get("left");
         rightDrive = hardwareMap.dcMotor.get("right");
         rack = hardwareMap.dcMotor.get("rack");
         marker = hardwareMap.servo.get("marker");
-
+       
         leftDrive.setDirection(DcMotorSimple.Direction.REVERSE);
         rack.setDirection(DcMotorSimple.Direction.REVERSE);
 
