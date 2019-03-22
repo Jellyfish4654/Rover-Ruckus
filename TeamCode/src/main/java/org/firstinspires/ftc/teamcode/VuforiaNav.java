@@ -74,10 +74,9 @@ public class VuforiaNav {
     public void initVuforia(LinearOpMode opmode) {
         linearOpMode = opmode;
         // Camera Preview Paramater object creation
-        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id",
-                hardwareMap.appContext.getPackageName());
-        // VuforiaLocalizer.Parameters parameters = new
-        // VuforiaLocalizer.Parameters(cameraMonitorViewId);
+        int cameraMonitorViewId = linearOpMode.hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id",
+                linearOpMode.hardwareMap.appContext.getPackageName());
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
 
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
         parameters.cameraDirection = CAMERA_CHOICE;
